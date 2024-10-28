@@ -1,0 +1,71 @@
+a="Buraya Bot Tokeninizi Giriniz"
+import discord
+from discord.ext import commands
+from yt_dlp import YoutubeDL
+
+intents = discord.Intents.default()
+intents.message_content = True
+bot = commands.Bot(command_prefix='$', intents=intents)
+
+@bot.event
+async def on_ready():
+    print(f'{bot.user} olarak giriş yaptık')
+
+@bot.command()
+async def hello(ctx):
+    await ctx.send(f'Merhaba! Ben {bot.user}, bir Discord sohbet botuyum!')
+
+@bot.command()
+async def heh(ctx, count_heh=5):
+    await ctx.send("he" * count_heh)
+
+@bot.command()
+async def join(ctx):
+    # Bot joins the voice channel the user is in
+    if ctx.author.voice:
+        channel = ctx.author.voice.channel
+        await channel.connect()
+        await ctx.send("Ses kanalına katıldım!")
+    else:
+        await ctx.send("Ses kanalında değilsin!")
+@bot.command()
+async def leave(ctx):
+    # Bot leaves the voice channel
+    if ctx.voice_client:
+        await ctx.voice_client.disconnect()
+        await ctx.send("Ses kanalından ayrıldım!")
+    else:
+        await ctx.send("Ses kanalında değilim!")
+
+@bot.command()
+async def play(ctx, url):
+    # Ensure the bot is in a voice channel
+    if not ctx.voice_client:
+        if ctx.author.voice:
+            await ctx.author.voice.channel.connect()
+        else:
+            await ctx.send("Lütfen önce bir ses kanalına girin!")
+            return
+
+    # Download audio from YouTube using yt-dlp
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
+        'outtmpl': '/tmp/%(title)s.%(ext)s',
+        'quiet': True,
+    }
+
+    with YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=False)
+        url2 = info['formats'][0]['url']
+        source = await discord.FFmpegOpusAudio.from_probe(url2)
+
+    # Play the audio
+    ctx.voice_client.play(source)
+    await ctx.send(f"{info['title']} oynatılıyor!")
+
+bot.run("MTI5Nzk5MjY3NzYxMDIyNTcwNg.GJWOUm.ojlSKVcQ15rIUPh3AUXVDHnzlqoL_Tlh3L5hhI")
